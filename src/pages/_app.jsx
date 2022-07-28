@@ -1,12 +1,11 @@
 import { useRouter } from 'next/router'
-import useStore from '@/helpers/store'
+import useStore from '../helpers/store'
 import { useEffect } from 'react'
-import Header from '@/config'
-import Dom from '@/components/layout/dom'
-import '@/styles/index.css'
+import Dom from '../components/layout/dom'
+import '../styles/index.css'
 import dynamic from 'next/dynamic'
 
-const LCanvas = dynamic(() => import('@/components/layout/canvas'), {
+const LCanvas = dynamic(() => import('../components/layout/canvas'), {
   ssr: false,
 })
 
@@ -19,7 +18,6 @@ function App({ Component, pageProps = { title: 'index' } }) {
 
   return (
     <>
-      <Header title={pageProps.title} />
       <Dom>
         <Component {...pageProps} />
       </Dom>

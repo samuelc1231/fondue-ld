@@ -1,22 +1,106 @@
 import dynamic from 'next/dynamic'
-// Step 5 - delete Instructions components
-import Instructions from '@/components/dom/Instructions'
+import Navbar from '../components/dom/Navbar'
+import { RoomProvider, useOthers, useMyPresence } from '../../liveblocks.config'
+import Cursor from '../components/Cursor'
+
+const COLORS = [
+  '#E57373',
+  '#9575CD',
+  '#4FC3F7',
+  '#81C784',
+  '#FFF176',
+  '#FF8A65',
+  '#F06292',
+  '#7986CB',
+]
+
 // import Shader from '@/components/canvas/Shader/Shader'
 
 // Dynamic import is used to prevent a payload when the website start that will include threejs r3f etc..
 // WARNING ! errors might get obfuscated by using dynamic import.
 // If something goes wrong go back to a static import to show the error.
 // https://github.com/pmndrs/react-three-next/issues/49
-const Shader = dynamic(() => import('@/components/canvas/Shader/Shader'), {
+const Shader = dynamic(() => import('../components/canvas/Shader/Shader'), {
   ssr: false,
 })
+
+const Room = dynamic(() => import('../components/canvas/Room'), {
+  ssr: false,
+})
+
+function Example() {
+  /**
+   * useMyPresence returns the presence of the current user and a function to update it.
+   * updateMyPresence is different than the setState function returned by the useState hook from React.
+   * You don't need to pass the full presence object to update it.
+   * See https://liveblocks.io/docs/api-reference/liveblocks-react#useMyPresence for more information
+   */
+  const [{ cursor }, updateMyPresence] = useMyPresence()
+
+  /**
+   * Return all the other users in the room and their presence (a cursor position in this case)
+   */
+  const others = useOthers()
+
+  return (
+    <main
+      className='relative flex w-full h-screen place-content-center place-items-center'
+      onPointerMove={(event) =>
+        // Update the user cursor position on every pointer move
+        updateMyPresence({
+          cursor: {
+            x: Math.round(event.clientX),
+            y: Math.round(event.clientY),
+          },
+        })
+      }
+      onPointerLeave={() =>
+        // When the pointer goes out, set cursor to null
+        updateMyPresence({
+          cursor: null,
+        })
+      }
+    >
+      {
+        /**
+         * Iterate over other users and display a cursor based on their presence
+         */
+        others.map(({ connectionId, presence }) => {
+          if (presence == null || presence.cursor == null) {
+            return null
+          }
+
+          return (
+            <Cursor
+              key={`cursor-${connectionId}`}
+              // connectionId is an integer that is incremented at every new connections
+              // Assigning a color with a modulo makes sure that a specific user has the same colors on every clients
+              color={COLORS[connectionId % COLORS.length]}
+              x={presence.cursor.x}
+              y={presence.cursor.y}
+            />
+          )
+        })
+      }
+    </main>
+  )
+}
 
 // dom components goes here
 const Page = (props) => {
   return (
-    <>
-      <Instructions />
-    </>
+    <RoomProvider
+      id='1'
+      /**
+       * Initialize the cursor position to null when joining the room
+       */
+      initialPresence={{
+        cursor: null,
+      }}
+    >
+      <Navbar />
+      <Example />
+    </RoomProvider>
   )
 }
 
@@ -24,7 +108,7 @@ const Page = (props) => {
 // It will receive same props as Page component (from getStaticProps, etc.)
 Page.r3f = (props) => (
   <>
-    <Shader />
+    <Room />
   </>
 )
 
